@@ -143,7 +143,7 @@ public class EntityDamagedScriptEvent extends BukkitScriptEvent implements Liste
                 }
             }
         }
-        if (!entity.tryAdvancedMatcher(target, path.context) || !path.tryObjectSwitch("type", entity)) {
+        if (!matchesObject(entity, target, path.context) || !path.tryObjectSwitch("type", entity)) {
             return false;
         }
         if (!runInCheck(path, entity.getLocation())) {
