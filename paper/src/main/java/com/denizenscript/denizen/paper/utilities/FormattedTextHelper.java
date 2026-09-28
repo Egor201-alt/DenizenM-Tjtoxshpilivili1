@@ -6,8 +6,6 @@ import com.denizenscript.denizencore.objects.core.ColorTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ListTag;
 import com.denizenscript.denizencore.objects.core.MapTag;
-import com.denizenscript.denizencore.tags.Attribute;
-import com.denizenscript.denizencore.tags.TagContext;
 import com.denizenscript.denizencore.utilities.AsciiMatcher;
 import com.denizenscript.denizencore.utilities.CoreConfiguration;
 import com.denizenscript.denizencore.utilities.CoreUtilities;

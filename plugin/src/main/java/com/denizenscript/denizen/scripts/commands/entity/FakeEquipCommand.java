@@ -85,6 +85,7 @@ public class FakeEquipCommand extends AbstractCommand {
         EquipmentOverride equipment = new EquipmentOverride();
         for (Argument arg : scriptEntry) {
             if (!scriptEntry.hasObject("entities")
+                    && !arg.hasPrefix()
                     && arg.matchesArgumentList(EntityTag.class)) {
                 scriptEntry.addObject("entities", arg.asType(ListTag.class).filter(EntityTag.class, scriptEntry));
             }
@@ -136,6 +137,10 @@ public class FakeEquipCommand extends AbstractCommand {
                 throw new InvalidArgumentsException("Must specify a for player!");
             }
             scriptEntry.addObject("for", Collections.singletonList(player));
+        }
+        scriptEntry.defaultObject("entities", Utilities.entryDefaultEntityList(scriptEntry, false));
+        if (!scriptEntry.hasObject("entities")) {
+            throw new InvalidArgumentsException("Must specify entities!");
         }
         scriptEntry.addObject("equipment", equipment);
     }
