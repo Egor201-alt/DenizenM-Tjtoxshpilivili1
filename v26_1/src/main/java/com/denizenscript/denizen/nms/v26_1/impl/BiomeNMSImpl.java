@@ -372,15 +372,8 @@ public class BiomeNMSImpl extends BiomeNMS {
         }
         List<AmbientAdditionsSettings> additions = new ArrayList<>();
         ObjectTag additionsInput = map.getObject("additions");
-        if (additionsInput != null) {
-            for (ObjectTag entry : ListTag.getListFor(additionsInput, CoreUtilities.noDebugContext).objectForms) {
-                MapTag entryMap = MapTag.getMapFor(entry, CoreUtilities.noDebugContext);
-                Holder<SoundEvent> holder = soundFor(entryMap == null ? entry : entryMap.getObject("sound"));
-                if (holder == null) {
-                    return null;
-                }
-                additions.add(new AmbientAdditionsSettings(holder, entryMap == null ? 0.0111 : doubleFor(entryMap, "chance", 0.0111)));
-            }
+        if (additionsInput != null && !additionsFor(additionsInput, additions)) {
+            return null;
         }
         return new AmbientSounds(loop, mood, additions);
     }
@@ -397,16 +390,36 @@ public class BiomeNMSImpl extends BiomeNMS {
             result.putObject("mood", moodMap);
         });
         if (!sounds.additions().isEmpty()) {
-            ListTag additions = new ListTag();
+            MapTag additions = new MapTag();
             for (AmbientAdditionsSettings addition : sounds.additions()) {
-                MapTag additionMap = new MapTag();
-                additionMap.putObject("sound", soundToTag(addition.soundEvent()));
-                additionMap.putObject("chance", new ElementTag(addition.tickChance()));
-                additions.addObject(additionMap);
+                additions.putObject(soundToTag(addition.soundEvent()).asString(), new ElementTag(addition.tickChance()));
             }
             result.putObject("additions", additions);
         }
         return result;
+    }
+
+    private static boolean additionsFor(ObjectTag input, List<AmbientAdditionsSettings> into) {
+        MapTag map = MapTag.getMapFor(input, CoreUtilities.noDebugContext);
+        if (map != null && map.getObject("sound") == null) {
+            for (var entry : map.entrySet()) {
+                Holder<SoundEvent> holder = soundFor(new ElementTag(entry.getKey().str, true));
+                if (holder == null) {
+                    return false;
+                }
+                into.add(new AmbientAdditionsSettings(holder, entry.getValue().asElement().asDouble()));
+            }
+            return true;
+        }
+        for (ObjectTag entry : ListTag.getListFor(input, CoreUtilities.noDebugContext).objectForms) {
+            MapTag entryMap = MapTag.getMapFor(entry, CoreUtilities.noDebugContext);
+            Holder<SoundEvent> holder = soundFor(entryMap == null ? entry : entryMap.getObject("sound"));
+            if (holder == null) {
+                return false;
+            }
+            into.add(new AmbientAdditionsSettings(holder, entryMap == null ? 0.0111 : doubleFor(entryMap, "chance", 0.0111)));
+        }
+        return true;
     }
 
     private static Music musicFor(ObjectTag input) {
@@ -506,6 +519,17 @@ public class BiomeNMSImpl extends BiomeNMS {
 
     private static List<AmbientParticle> ambientParticlesFor(ObjectTag value) {
         List<AmbientParticle> result = new ArrayList<>();
+        MapTag byName = MapTag.getMapFor(value, CoreUtilities.noDebugContext);
+        if (byName != null && byName.getObject("particle") == null) {
+            for (var entry : byName.entrySet()) {
+                ParticleOptions particle = particleFor(new ElementTag(entry.getKey().str, true));
+                if (particle == null) {
+                    return null;
+                }
+                result.add(new AmbientParticle(particle, entry.getValue().asElement().asFloat()));
+            }
+            return result;
+        }
         for (ObjectTag entry : ListTag.getListFor(value, CoreUtilities.noDebugContext).objectForms) {
             MapTag map = MapTag.getMapFor(entry, CoreUtilities.noDebugContext);
             ParticleOptions particle = particleFor(map == null ? entry : map.getObject("particle"));
@@ -517,20 +541,16 @@ public class BiomeNMSImpl extends BiomeNMS {
         return result;
     }
 
-    private static ListTag ambientParticlesToTag(List<?> particles) {
-        ListTag result = new ListTag();
+    private static MapTag ambientParticlesToTag(List<?> particles) {
+        MapTag result = new MapTag();
         for (Object entry : particles) {
             if (!(entry instanceof AmbientParticle particle)) {
                 return null;
             }
             ElementTag name = particleToTag(particle.particle());
-            if (name == null) {
-                continue;
+            if (name != null) {
+                result.putObject(name.asString(), new ElementTag(particle.probability()));
             }
-            MapTag map = new MapTag();
-            map.putObject("particle", name);
-            map.putObject("probability", new ElementTag(particle.probability()));
-            result.addObject(map);
         }
         return result;
     }

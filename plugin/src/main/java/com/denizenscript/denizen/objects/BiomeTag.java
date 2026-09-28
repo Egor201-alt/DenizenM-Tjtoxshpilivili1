@@ -185,7 +185,7 @@ public class BiomeTag implements ObjectTag, Adjustable, FlaggableObject {
         // Numbers, such as 'cloud_height', 'music_volume', or 'turtle_egg_hatch_chance', return an ElementTag(Decimal).
         // Switches, such as 'monsters_burn', 'piglins_zombify', or 'water_evaporates', return an ElementTag(Boolean).
         // 'moon_phase' returns a phase name, 'eyeblossom_open' returns TRUE, FALSE, or DEFAULT, and 'villager_activity' and 'baby_villager_activity' return an activity name.
-        // 'default_dripstone_particle' returns a particle name, and 'ambient_particles' returns a ListTag of MapTags.
+        // 'default_dripstone_particle' returns a particle name, and 'ambient_particles' returns a MapTag of particle name to spawn probability.
         // 'ambient_sounds', 'background_music', and 'bed_rule' return a MapTag, shaped the same way the mechanism accepts them - see <@link mechanism BiomeTag.attribute>.
         // @example
         // # Narrates the color of the sky over plains.
@@ -407,10 +407,10 @@ public class BiomeTag implements ObjectTag, Adjustable, FlaggableObject {
         // 'eyeblossom_open' takes TRUE, FALSE, or DEFAULT.
         // 'villager_activity' and 'baby_villager_activity' take an activity name, such as IDLE, WORK, REST, or PLAY.
         // 'default_dripstone_particle' takes a particle name.
-        // 'ambient_particles' takes a list of particle names, or of maps with a 'particle' name and an optional 'probability' decimal (default 0.05).
+        // 'ambient_particles' takes a map of particle name to spawn probability, or a single map with a 'particle' name and an optional 'probability' decimal (default 0.05).
         // 'ambient_sounds' takes a map with any of 'loop' (a sound that plays continuously), 'mood', and 'additions'.
         // 'mood' is either a sound name, or a map with 'sound' plus optional 'tick_delay' (default 6000), 'block_search_extent' (default 8), and 'offset' (default 2.0).
-        // 'additions' is a list of sound names, or of maps with 'sound' plus an optional 'chance' (default 0.0111).
+        // 'additions' is a map of sound name to chance, or a single map with 'sound' plus an optional 'chance' (default 0.0111).
         // A plain sound name given in place of the whole map is read as just the 'loop' sound.
         // 'background_music' takes a map with any of 'default', 'creative', and 'underwater', each either a sound name or a map with 'sound' plus optional 'min_delay' (default 12000), 'max_delay' (default 24000), and 'replace_current' (default false).
         // A plain sound name, or a map with a 'sound' key at the top level, is read as just the 'default' music.
@@ -430,7 +430,7 @@ public class BiomeTag implements ObjectTag, Adjustable, FlaggableObject {
         // - adjust <biome[desert]> attribute:<map[bed_rule=<map[can_sleep=NEVER;error_message=<&c>It is far too hot to sleep here.]>]>
         // @example
         // # Fills the plains biome with drifting white ash.
-        // - adjust <biome[plains]> attribute:<map[ambient_particles=<list[<map[particle=WHITE_ASH;probability=0.12]>]>]>
+        // - adjust <biome[plains]> attribute:<map[ambient_particles=<map[WHITE_ASH=0.12]>]>
         // -->
         tagProcessor.registerMechanism("attribute", false, MapTag.class, (object, attribute, input) -> {
             for (Map.Entry<StringHolder, ObjectTag> entry : input.entrySet()) {
