@@ -20,6 +20,8 @@ public class CooldownCommand extends AbstractCommand {
         setSyntax("cooldown [<duration>] (global) (script:<script>)");
         setRequiredArguments(1, 3);
         isProcedural = false;
+        // Writes a flag and nothing else: the deep-key write is under the tracker's write lock, and getTrackerFor crosses to the main thread itself on a cache miss.
+        asyncSafe = true;
     }
 
     // <--[command]

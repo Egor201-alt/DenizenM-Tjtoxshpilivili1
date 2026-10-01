@@ -37,6 +37,7 @@ import net.minecraft.world.attribute.BackgroundMusic;
 import net.minecraft.world.attribute.BedRule;
 import net.minecraft.world.attribute.EnvironmentAttribute;
 import net.minecraft.world.attribute.EnvironmentAttributeMap;
+import net.minecraft.world.attribute.EnvironmentAttributeSystem;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.schedule.Activity;
@@ -45,11 +46,13 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.chunk.LevelChunk;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.CraftParticle;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -60,6 +63,7 @@ import org.bukkit.entity.EntityType;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BiomeNMSImpl extends BiomeNMS {
 
@@ -67,6 +71,8 @@ public class BiomeNMSImpl extends BiomeNMS {
     public static final MethodHandle MAPPED_REGISTRY_REGISTRATION_INFOS = ReflectionHelper.getFields(MappedRegistry.class).getGetter("registrationInfos");
     public static final MethodHandle BIOME_ATTRIBUTES_SETTER = ReflectionHelper.getFields(Biome.class).getSetter("attributes");
     public static final Map<String, EnvironmentAttribute<?>> ATTRIBUTE_CACHE = new HashMap<>();
+    public static final MethodHandle LEVEL_ATTRIBUTES_SETTER = ReflectionHelper.FieldCache.toHandleSetter(ReflectionHelper.getFields(ServerLevel.class).getFirstOfType(EnvironmentAttributeSystem.class));
+    private static final Set<EnvironmentAttribute<?>> LAYERED_ATTRIBUTES = ConcurrentHashMap.newKeySet();
 
     static {
         try {
@@ -612,6 +618,24 @@ public class BiomeNMSImpl extends BiomeNMS {
             Debug.echoError(e);
         }
         setNetworkedRegistrationInfo();
+        if (LAYERED_ATTRIBUTES.add(attribute)) {
+            rebuildEnvironmentAttributes();
+        }
+    }
+
+    private static void rebuildEnvironmentAttributes() {
+        if (LEVEL_ATTRIBUTES_SETTER == null) {
+            return;
+        }
+        for (World world : Bukkit.getWorlds()) {
+            ServerLevel level = ((CraftWorld) world).getHandle();
+            try {
+                LEVEL_ATTRIBUTES_SETTER.invoke(level, EnvironmentAttributeSystem.builder().addDefaultLayers(level).build());
+            }
+            catch (Throwable e) {
+                Debug.echoError(e);
+            }
+        }
     }
 
     private List<EntityType> getSpawnableEntities(MobCategory creatureType) {

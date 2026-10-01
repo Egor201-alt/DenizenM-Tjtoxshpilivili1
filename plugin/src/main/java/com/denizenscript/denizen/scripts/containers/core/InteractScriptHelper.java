@@ -6,6 +6,7 @@ import com.denizenscript.denizen.objects.NPCTag;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.scripts.commands.core.CooldownCommand;
 import com.denizenscript.denizen.scripts.triggers.AbstractTrigger;
+import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.TimeTag;
 import com.denizenscript.denizencore.scripts.ScriptRegistry;
@@ -66,10 +67,14 @@ public class InteractScriptHelper {
     }
 
     public static String getCurrentStep(PlayerTag player, String scriptName) {
+        return scriptName == null ? null : getCurrentStep(player.getFlagTracker(), scriptName);
+    }
+
+    public static String getCurrentStep(AbstractFlagTracker tracker, String scriptName) {
         if (scriptName == null) {
             return null;
         }
-        ObjectTag step = player.getFlagTracker().getFlagValue("__interact_step." + scriptName);
+        ObjectTag step = tracker.getFlagValue("__interact_step." + scriptName);
         if (step != null) {
             return step.toString().toUpperCase();
         }

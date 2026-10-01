@@ -8,6 +8,7 @@ import com.denizenscript.denizen.scripts.containers.core.InteractScriptContainer
 import com.denizenscript.denizen.scripts.containers.core.InteractScriptHelper;
 import com.denizenscript.denizen.utilities.Utilities;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
+import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.objects.*;
 import com.denizenscript.denizencore.objects.core.DurationTag;
@@ -26,6 +27,7 @@ public class ZapCommand extends AbstractCommand implements Listener {
         setSyntax("zap (<script>) [<step>] (<duration>)");
         setRequiredArguments(0, 3);
         isProcedural = false;
+        asyncSafe = true;
     }
 
     // <--[command]
@@ -152,31 +154,37 @@ public class ZapCommand extends AbstractCommand implements Listener {
             Debug.report(scriptEntry, getName(), Utilities.getEntryPlayer(scriptEntry), script, stepElement != null ? stepElement : db("step", "++ (inc)"), duration);
         }
         String step = stepElement == null ? null : stepElement.asString();
-        String currentStep = InteractScriptHelper.getCurrentStep(Utilities.getEntryPlayer(scriptEntry), script.getName());
-        // Special-case for backwards compatibility: ability to use ZAP to count up steps.
-        if (step == null) {
-            // Okay, no step was identified.. that means we should count up,
-            // ie. if currentStep = 1, new step should = 2
-            // If the currentStep is a number, increment it. If not, set it
-            // to '1' so it can be incremented next time.
-            if (ArgumentHelper.matchesInteger(currentStep)) {
-                step = String.valueOf(Integer.parseInt(currentStep) + 1);
-            }
-            else {
-                step = "1";
-            }
-        }
-        else if (step.equals("*")) {
-            step = ((InteractScriptContainer) script.getContainer()).getDefaultStepName();
-        }
-        if (step.equalsIgnoreCase(currentStep)) {
-            Debug.echoError(scriptEntry, "Zapping to own current step!");
-            return;
-        }
         TimeTag expiration = null;
         if (duration != null && duration.getSeconds() > 0) {
             expiration = new TimeTag(TimeTag.now().millis() + duration.getMillis());
         }
-        Utilities.getEntryPlayer(scriptEntry).getFlagTracker().setFlag("__interact_step." + script.getName(), new ElementTag(step), expiration);
+        // Taken once outside the lock: fetching a tracker can cross to the main thread on a cache miss, and crossing while holding
+        // the write lock would deadlock against a main thread already inside setFlag for the same player.
+        AbstractFlagTracker tracker = Utilities.getEntryPlayer(scriptEntry).getFlagTracker();
+        // Read, increment and write as one step, or two async queues zapping one player could both read the same step.
+        synchronized (tracker.getWriteLock()) {
+            String currentStep = InteractScriptHelper.getCurrentStep(tracker, script.getName());
+            // Special-case for backwards compatibility: ability to use ZAP to count up steps.
+            if (step == null) {
+                // Okay, no step was identified.. that means we should count up,
+                // ie. if currentStep = 1, new step should = 2
+                // If the currentStep is a number, increment it. If not, set it
+                // to '1' so it can be incremented next time.
+                if (ArgumentHelper.matchesInteger(currentStep)) {
+                    step = String.valueOf(Integer.parseInt(currentStep) + 1);
+                }
+                else {
+                    step = "1";
+                }
+            }
+            else if (step.equals("*")) {
+                step = ((InteractScriptContainer) script.getContainer()).getDefaultStepName();
+            }
+            if (step.equalsIgnoreCase(currentStep)) {
+                Debug.echoError(scriptEntry, "Zapping to own current step!");
+                return;
+            }
+            tracker.setFlag("__interact_step." + script.getName(), new ElementTag(step), expiration);
+        }
     }
 }

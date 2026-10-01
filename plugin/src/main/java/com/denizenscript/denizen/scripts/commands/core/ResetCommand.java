@@ -18,6 +18,8 @@ public class ResetCommand extends AbstractCommand {
         setSyntax("reset (<player>|...) [cooldown/saves/global_cooldown] (<script>)");
         setRequiredArguments(1, 3);
         isProcedural = false;
+        // Same as CooldownCommand - it only calls into it. PlayerTag.valueOf keeps just the uuid, and isValid answers off-thread by design.
+        asyncSafe = true;
     }
 
     // <--[command]
