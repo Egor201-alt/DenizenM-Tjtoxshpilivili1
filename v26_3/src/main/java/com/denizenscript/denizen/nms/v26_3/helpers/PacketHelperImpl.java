@@ -84,16 +84,6 @@ public class PacketHelperImpl implements PacketHelper {
 
     public static final EntityDataAccessor<Optional<Component>> ENTITY_DATA_ACCESSOR_CUSTOM_NAME = ReflectionHelper.getFieldValue(net.minecraft.world.entity.Entity.class, "DATA_CUSTOM_NAME", null);
     public static final EntityDataAccessor<Boolean> ENTITY_DATA_ACCESSOR_CUSTOM_NAME_VISIBLE = ReflectionHelper.getFieldValue(net.minecraft.world.entity.Entity.class, "DATA_CUSTOM_NAME_VISIBLE", null);
-    private static Method MAPDATA_SET_COLORS_DIRTY;
-    static {
-        try {
-            MAPDATA_SET_COLORS_DIRTY = MapItemSavedData.class.getDeclaredMethod("setColorsDirty", int.class, int.class);
-            MAPDATA_SET_COLORS_DIRTY.setAccessible(true);
-        }
-        catch (Throwable ex) {
-            Debug.echoError(ex);
-        }
-    }
 
     @Override
     public void setFakeAbsorption(Player player, float value) {
@@ -339,14 +329,16 @@ public class PacketHelperImpl implements PacketHelper {
             }
             if (anyChanged) {
                 MapItemSavedData map = (MapItemSavedData) MAPVIEW_WORLDMAP.get(canvas.getMapView());
-                MAPDATA_SET_COLORS_DIRTY.invoke(map, Math.max(x, 0), Math.max(y, 0));
-                MAPDATA_SET_COLORS_DIRTY.invoke(map, width + x - 1, height + y - 1);
+                MAP_ITEM_SET_COLORS.invoke(map, Math.max(x, 0), Math.max(y, 0));
+                MAP_ITEM_SET_COLORS.invoke(map, width + x - 1, height + y - 1);
             }
         }
         catch (Throwable ex) {
             Debug.echoError(ex);
         }
     }
+
+    public static final MethodHandle MAP_ITEM_SET_COLORS = ReflectionHelper.getMethodHandle(MapItemSavedData.class, "setColorsDirty", int.class, int.class);
 
     @Override
     public void setNetworkManagerFor(Player player) {
