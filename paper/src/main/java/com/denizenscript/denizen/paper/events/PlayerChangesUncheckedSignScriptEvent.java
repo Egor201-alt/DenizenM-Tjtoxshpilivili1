@@ -18,8 +18,35 @@ import org.bukkit.event.Listener;
 
 public class PlayerChangesUncheckedSignScriptEvent extends BukkitScriptEvent implements Listener {
 
+    // <--[event]
+    // @Events
+    // player changes unchecked sign
+    //
+    // @Plugin Paper
+    //
+    // @Group Paper
+    //
+    // @Location true
+    //
+    // @Cancellable true
+    //
+    // @Triggers when a player sends sign text for a sign the server does not believe they are editing - for example one that was broken or replaced
+    // while the edit screen was open, or one they never opened at all. <@link event player changes sign> does not fire for these, so this is the event
+    // to use for catching sign edits that arrive outside the normal flow.
+    //
+    // @Context
+    // <context.location> returns the LocationTag of the sign being edited.
+    // <context.side> returns an ElementTag of the side of the sign that was edited (FRONT or BACK).
+    // <context.new> returns the text the player sent, as a ListTag of lines.
+    // <context.old> returns the sign's current text, as a ListTag of lines. Returns nothing when the block is no longer a sign, which this event can
+    // fire for by its nature - check it with <@link tag ObjectTag.exists> before relying on it.
+    //
+    // @Player Always.
+    //
+    // -->
+
     public PlayerChangesUncheckedSignScriptEvent() {
-        registerCouldMatcher("player unchecked sign edits");
+        registerCouldMatcher("player changes unchecked sign");
     }
 
     public UncheckedSignChangeEvent event;
