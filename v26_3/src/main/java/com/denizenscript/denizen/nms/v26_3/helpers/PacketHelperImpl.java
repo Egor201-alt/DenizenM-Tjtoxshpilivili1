@@ -66,7 +66,6 @@ import org.bukkit.map.MapPalette;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 public class PacketHelperImpl implements PacketHelper {
