@@ -11,10 +11,10 @@ import com.denizenscript.denizencore.utilities.CoreConfiguration;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.destroystokyo.paper.event.server.PaperServerListPingEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.bukkit.event.EventHandler;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServerListPingScriptEventPaperImpl extends ListPingScriptEvent {
 
@@ -72,16 +72,16 @@ public class ServerListPingScriptEventPaperImpl extends ListPingScriptEvent {
 
         public static void excludeListedPlayers(PaperServerListPingEvent event, Set<UUID> exclude) {
             int size = event.getListedPlayers().size();
-            MutableInt counter = new MutableInt();
+            AtomicInteger counter = new AtomicInteger();
             event.getListedPlayers().removeIf(listedPlayerInfo -> {
                 if (exclude.contains(listedPlayerInfo.id())) {
-                    counter.increment();
+                    counter.incrementAndGet();
                     return true;
                 }
                 return false;
             });
             if (size == event.getNumPlayers()) {
-                event.setNumPlayers(event.getNumPlayers() - counter.intValue());
+                event.setNumPlayers(event.getNumPlayers() - counter.get());
             }
         }
     }
