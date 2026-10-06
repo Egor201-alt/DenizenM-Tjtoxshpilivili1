@@ -16,26 +16,35 @@ An implementation of the Denizen Scripting Language for Paper servers, with stro
 * **Source & Guide:** Check it out on 🔗 **[GitHub: refined-denizenScript](https://github.com/Humususus/refined-denizenScript)**
 
 ## ✨ New Features
+* **Internal Migration:** Fully migrated to **Paper Components** for improved performance and modern API compatibility.
 * **Events:**
-    * Added support for the Paper-specific event `on player unchecked sign edits`.
+    * Added support for the Paper-specific event `on player changes unchecked sign`.
     * Migrated `on player equips|unequips ...` to a generalized `on <entity> equips|unequips <item> or armor|helmet|chestplate|leggings|boots|body` syntax, extending support to all entities and adding the new body slot.
-        * `<context.entity>` – The `EntityTag` involved.
+        * `<context.entity>` – The **EntityTag** involved.
         * `<context.slot>` – The name of the equipment slot.
-        * `<context.new_item>` / `<context.old_item>` – The current and previous `ItemTag` in the slot.
-* **Biome (by `isnsest`)**:
+        * `<context.new_item>` / `<context.old_item>` – The current and previous **ItemTag** in the slot.
+* **BiomeTag (by `isnsest`):**
     * Added 'BiomeTag.attribute' mechanism ang tag to set a specific biome vanilla attributes, accepts a `MapTag`.
     * Note: Specify only the attribute name directly (e.g. `SKY_COLOR`, not `visuals/SKY_COLOR`).
-    * Usage example - `adjust <biome> attribute:[SKY_COLOR=<ColorTag or valid HEX>;CLOUD_HEIGHT=600]`
     * More details you can find [here](https://minecraft.wiki/w/Environment_attribute).
+    * Usage examples:
+       * Gives the plains biome a red sky and nether music.
+         * `adjust <biome[plains]> attribute:[SKY_COLOR=<ColorTag or valid HEX>;CLOUD_HEIGHT=600]`
+       * Gives the plains biome cave ambience, with its mood sound coming around far more often than usual.
+         * `adjust <biome[plains]> attribute:<map[ambient_sounds=<map[loop=AMBIENT_CAVE;mood=<map[sound=AMBIENT_CAVE;tick_delay=1200]>]>]>`
+       * Stops players sleeping in deserts, and tells them why.
+         * `adjust <biome[desert]> attribute:<map[bed_rule=<map[can_sleep=NEVER;error_message=<&c>It is far too hot to sleep here.]>]>`
+       * Fills the plains biome with drifting white ash.
+         * `adjust <biome[plains]> attribute:<map[ambient_particles=<map[WHITE_ASH=0.12]>]>` 
 * **Text & Formatting:**
     * New tags: `<&sprite>`, `<&shadow_color>`, `<&shadow_gradient>`, `<&dual_gradient>` and `<&head>`.
       * Sprite usage example - `<&sprite[minecraft:items:item/porkchop]>`
       * Shadow Color usage examples:
          * Simple variant - `<&shadow_color[#51a2ff]>`
-         * With adjustable transparency - `<&shadow_color[<color[#51a2ff].with_alpha[254]>]>`
+         * With adjustable transparency - `<&shadow_color[<color[#51a2ff].with_alpha[255]>]>`
       * Shadow gradient usage examples:
          * Simple variant - `<&shadow_gradient[from=#51a2ff;to=#FFF085]>`
-         * With adjustable transparency - `<&shadow_gradient[from=<color[#51a2ff].with_alpha[0]>;to=<color[#FFF085].with_alpha[254]>]>`
+         * With adjustable transparency - `<&shadow_gradient[from=<color[#51a2ff].with_alpha[0]>;to=<color[#FFF085].with_alpha[255]>]>`
       * Dual gradient including Shadow color and Simple color gradients, usage examples:
          * Simple variant - `<&dual_gradient[from=#51a2ff;to=#FFF085;s_from=#FFF085;s_to=#51a2ff]>`
          * Tags `from` and `to` for simple color gradient adjusting.
@@ -45,23 +54,71 @@ An implementation of the Denizen Scripting Language for Paper servers, with stro
          * Only Face Texture (without surface pixels) - `<&head[!Tjtoxshpilivili1]>`
          * Head tag also accepts `<PlayerTag.skin_blob>`, `UUID` and `base64` skin textures.
     * Added `.shadow_color`, `.shadow_gradient` and `.dual_gradient` tags to `ElementTag`.
-* **Internal Migration:** Fully migrated to **Paper Components** for improved performance and modern API compatibility.
+* **New Tags & Utilities:**
+  * **List Operations:**
+    * `<ListTag.activation[<type>]>` – Applies activation functions (e.g., RELU, SIGMOID, TANH) directly to list elements.
+    * `<ListTag.matrix_mul[<list>]>` – Performs matrix multiplication.
+    * `<ListTag.dot_product[<list>]>` – Calculates the dot product of two numerical lists.
+  * **Queue & Thread Diagnostics:**
+    * `<QueueTag.is_async>` – Checks if a queue is running asynchronously.
+    * `<QueueTag.async_stats>` – Returns performance statistics for async queues.
+    * `<util.is_main_thread>` – Checks if the current thread is the main server thread.
+    * `<util.current_thread>` – Returns details about the active thread.
+    * `<util.current_time_nanos>` – Returns precise time in nanoseconds.
+
+## ⚡ Async Scripting Engine
+* **Off-Thread Execution:**
+  * Script queues can now run off the main thread. Internal logic (tags, math, text, lists, maps) no longer consumes main thread CPU time, preventing slow scripts from lagging the server.
+* **Automatic Main Thread Syncing:**
+  * Non-thread-safe actions automatically sync to the main thread with zero risk of corruption.
+  * The first thread-crossing operation may take up to a tick, while subsequent sequential calls take only microseconds.
+  * Fire-and-forget commands (`narrate`, `playsound`, `playeffect`, `runlater`, etc.) hand over without waiting at all.
+* **New Script Commands & Switches:**
+  * Added `async` parameter support to `run`, `runlater`, `define`, and `detached` executions.
+  * Usage examples:
+    * Run async - `run my_task async`
+    * Schedule async task - `runlater nightly_report delay:1h async`
+    * Async definition - `~define result <[huge_list].parse_tag[<[parse_value].to_uppercase>]>`
+    * Async block:
+      ```
+      - async:
+        - define sorted <server.flag[scores].sort_by_value>
+      - narrate "Top: <[sorted].keys.last>"
+      ```
+* **New Configuration Settings:**
+  * Added `Scripts.Async` section: `Allow`, `Main thread wait timeout`, `Shutdown timeout`, `Main thread task budget ms`, `Main thread wait linger us`, `Warn at queue count`, and `Max queue count`.
+* **Documentation:**
+  * Full write-up on thread safety is available in the [Core README](https://github.com/Energobro/DenizenM-Core#async-scripts) and the **Async Queues / Async Tag Safety** language meta pages.
 
 ## 👾 Commands
-* **Teleport**:
+* **Teleport:**
   * An `async` option has been added that teleports the player to unloaded chunks without causing server lag; sometimes there is a slight delay in execution. Details: https://docs.papermc.io/paper/dev/entity-teleport/
   * Added `~waitable` tag support for teleports utilizing the async parameter. This allows scripts to precisely track and wait until the asynchronous teleportation process is fully completed.
   * Usage examples:
     * Async teleport - `teleport <object> <location> async`
     * Waitable async teleport - `~teleport <object> <location> async`
-* **Playeffect**:
+* **Playeffect:**
   * Migrated to Paper's modern `ParticleBuilder` API, fixing a vanilla limitation where particles wouldn't render beyond 32 blocks from the player.
   * Added automatic handling for the `forced` parameter. Previously, even if you specified a high visibility radius (e.g., visibility:100) for a particle spawned 50 blocks away, it wouldn't display. Forcing the particle now ensures it correctly renders at extended distances.
   * Usage example - `playeffect effect:END_ROD quantity:100 <location> visibility:100 forced`
-* **Resource Pack:** Fully overhauled the logic for the `resourcepack` command to support adding multiple resource packs.
+* **Resourcepack:**
     * Added a new `add` argument to the `resourcepack` command to send additional resource packs to a player.
     * Added `PlayerTag.remove_resource_pack` mechanism to remove a specific resource pack by ID from a player.
     * Added `PlayerTag.remove_resource_packs` mechanism to remove all resource packs from a player.
+* **Adjustblock:**
+    * Added support for passing a **MapTag**, matching the behavior of `adjust`.
+    * Usage example - `adjustblock <location> <map[direction=north;half=top]>`
+* **Playsound:**
+  * Added `source:<entity>` parameter to play sound directly from an entity, causing the audio to follow its movement and automatically stop if the entity dies.
+  * Added `targets:<player>|...` parameter to specify which players hear the sound, which also offloads execution from the main server thread.
+  * Usage examples:
+    * Sound following an entity - `playsound <location> sound:<sound> source:<entity>`
+    * Targeted off-thread play - `playsound <location> sound:<sound> targets:<player>`
+* **Run / Runlater:**
+  * Added `async` argument to run the scheduled script in its own asynchronous queue when executed.
+  * Usage examples:
+    * `runlater <script> delay:5s async`
+    * `run <script> async`
 
 ## 🧪 Items & Mechanics
 * **Attributes:**
@@ -73,7 +130,14 @@ An implementation of the Denizen Scripting Language for Paper servers, with stro
   * Usage examples:
     * Backward compatibility - `custom_model_data: 1000`
     * New format - `custom_model_data: <map[floats=<list[1000]>;flags=<list[...]>;strings=<list[foo:bar]>;colors=<list[<color[127,0,0]>]>]>`
-      * Simple usage - `custom_model_data: [floats=1000;flags=...;strings=foo:bar;colors=<color[127,0,0]>]`
+    * Simple usage - `custom_model_data: [floats=1000;flags=...;strings=foo:bar;colors=<color[127,0,0]>]`
+
+## 🧱 Mechanisms & Tags
+* **MaterialTag:**
+  * Added `MaterialTag.chain_part` tag and mechanism to set or get the shelf connection state (`LEFT`, `CENTER`, `RIGHT`, `UNCONNECTED`).
+  * Usage examples:
+    * Tag - `<material.chain_part>`
+    * Mechanism - `adjust <material> chain_part:CENTER`
 
 ## 🧹 Optimization & Cleanup
 * **Core Optimization:** Implementation of custom optimizations across several internal classes.
@@ -82,24 +146,22 @@ An implementation of the Denizen Scripting Language for Paper servers, with stro
     * Optimized the `.distance` tag by replacing `Math.pow` with direct multiplication. This reduces computational overhead and results in faster distance calculations across the script.
 * **Removals:**
     * The `.scriptname` tag has been removed from all objects.
-    * `Denizen ASAP Strong warning` has been fully removed.
+    * `Denizen ASAP Strong Warning` has been fully removed.
+    * Some very old, deprecated Denizen tags.
     * **[WIP]** Removed NMSVersion checks for versions prior to 26.1.
 
 ## 🐛 Bug Fixes
 * **showfake:** Fixed an issue where the command would trigger an error message despite functioning correctly.
 * **fakeinternaldata:** Fixed a critical bug where the command was non-functional and threw an error.
 
-## ⚠️ Known Issues (Official Denizen problem, not mine)
-* `.has_potion_effect`: Currently not working.
-
 **Learn about Denizen from the Beginner's guide:** https://guide.denizenscript.com/guides/background/index.html
 
 #### Need help using Denizen? Try one of these places:
 
 - **My Telegram Channel** - spoilers, works with Denizen, new features: https://t.me/energ0bro
-- **Denizen Home Page** - a link directory (Modern): https://denizenscript.com/
-- **Meta Documentation (!! WITHOUT NEW CHANGES !!)** - command/tag/event/etc. search (Modern): https://meta.denizenscript.com/
-- **Beginner's Guide** - text form (Modern): https://guide.denizenscript.com/
+- **Denizen Home Page** - a link directory: https://denizenscript.com/
+- **Meta Documentation (!! WITHOUT NEW CHANGES !!)** - command/tag/event/etc. search: https://meta.denizenscript.com/
+- **Beginner's Guide** - text form: https://guide.denizenscript.com/
 
 #### Also check out:
 
