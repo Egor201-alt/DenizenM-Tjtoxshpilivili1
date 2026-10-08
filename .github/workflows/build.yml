@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Restore Spigot cache
+        id: spigot-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.m2/repository/org/spigotmc
+          key: spigot-bt-1.21.11-26.1.2-26.2-26.3-v1
+
+      - name: Configure git
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "ci"
+
+      - name: Build Spigot with BuildTools
+        if: steps.spigot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$HOME/bt"
+          cd "$HOME/bt"
+          curl -fsSL -o BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+          for rev in 26.3 26.2 26.1.2; do
+            java -jar BuildTools.jar --rev "$rev" --disable-java-check
+          done
+          java -jar BuildTools.jar --rev 1.21.11 --remapped --disable-java-check
+
+      - name: Save Spigot cache
+        if: always() && steps.spigot-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.m2/repository/org/spigotmc
+          key: spigot-bt-1.21.11-26.1.2-26.2-26.3-v1
+
+      - name: Build Denizen
+        run: mvn -B -ntp
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Denizen-jar
+          path: |
+            target/*.jar
+            dist/target/*.jar
+          if-no-files-found: error
