@@ -48,6 +48,40 @@ jobs:
           path: ~/.m2/repository/org/spigotmc
           key: spigot-bt-1.21.11-26.1.2-26.2-26.3-v1
 
+      - name: Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<'XML'
+          <settings>
+            <profiles>
+              <profile>
+                <id>citizens</id>
+                <repositories>
+                  <repository>
+                    <id>citizens-repo</id>
+                    <url>https://maven.citizensnpcs.co/repo</url>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>citizens</activeProfile>
+            </activeProfiles>
+          </settings>
+          XML
+
+      - name: Build DenizenM-Core
+        run: |
+          git clone --depth 1 --branch main https://github.com/Energobro/DenizenM-Core.git "$HOME/core"
+          cd "$HOME/core"
+          mvn -B -ntp install -DskipTests
+
+      - name: Pin Citizens version if 2.0.41-SNAPSHOT is unavailable
+        run: |
+          if ! mvn -B -ntp -q dependency:get -Dartifact=net.citizensnpcs:citizens-main:2.0.41-SNAPSHOT -Dtransitive=false; then
+            grep -rl "2.0.41-SNAPSHOT" --include=pom.xml . | xargs sed -i 's/2.0.41-SNAPSHOT/2.0.44-SNAPSHOT/g'
+          fi
+
       - name: Build Denizen
         run: mvn -B -ntp
 
