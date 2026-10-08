@@ -74,6 +74,37 @@ jobs:
         run: |
           git clone --depth 1 --branch main https://github.com/Energobro/DenizenM-Core.git "$HOME/core"
           cd "$HOME/core"
+          python3 - <<'PY'
+          import pathlib, re
+
+          def read(p):
+              with open(p, encoding="utf-8", newline="") as f:
+                  return f.read()
+
+          def write(p, s):
+              with open(p, "w", encoding="utf-8", newline="") as f:
+                  f.write(s)
+
+          ds = pathlib.Path("src/main/java/com/denizenscript/denizencore/utilities/debugging/DebugSubmitter.java")
+          text = read(ds)
+          if "UNSUPPORTED" not in text:
+              nl = "\r\n" if "\r\n" in text else "\n"
+              marker = "public class DebugSubmitter extends Thread {"
+              text = text.replace(marker, marker + nl + nl + '    public static final String UNSUPPORTED = "unsupported";', 1)
+              write(ds, text)
+
+          se = pathlib.Path("src/main/java/com/denizenscript/denizencore/events/ScriptEvent.java")
+          text = read(se)
+          if "matchesObject" not in text:
+              nl = "\r\n" if "\r\n" in text else "\n"
+              m = re.search(r"public abstract class ScriptEvent[^{]*\{", text)
+              method = (nl + nl
+                  + "    public boolean matchesObject(com.denizenscript.denizencore.objects.ObjectTag object, String matcher, com.denizenscript.denizencore.tags.TagContext context) {" + nl
+                  + "        return object.tryAdvancedMatcher(matcher, context);" + nl
+                  + "    }")
+              text = text[:m.end()] + method + text[m.end():]
+              write(se, text)
+          PY
           mvn -B -ntp install -DskipTests
 
       - name: Pin Citizens version if 2.0.41-SNAPSHOT is unavailable
