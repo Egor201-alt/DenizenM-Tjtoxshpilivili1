@@ -2,6 +2,7 @@ package com.denizenscript.denizen.utilities;
 
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.scripts.commands.entity.TeleportCommand;
+import com.denizenscript.denizencore.scripts.ScriptEntry;
 import com.denizenscript.denizen.scripts.commands.player.ResourcePackCommand;
 import com.denizenscript.denizen.scripts.containers.core.ItemScriptContainer;
 import com.denizenscript.denizen.utilities.packets.NetworkInterceptHelper;
@@ -136,6 +137,10 @@ public class PaperAPITools {
         if (callback != null) {
             callback.accept(true);
         }
+    }
+
+    public void teleportAsync(Entity entity, Location loc, PlayerTeleportEvent.TeleportCause cause, List<TeleportCommand.EntityState> entityTeleportFlags, List<TeleportCommand.Relative> relativeTeleportFlags, Consumer<Boolean> callback, ScriptEntry scriptEntry) {
+        teleportAsync(entity, loc, cause, entityTeleportFlags, relativeTeleportFlags, callback);
     }
 
     public void registerBrewingRecipe(String keyName, ItemStack result, String input, String ingredient, ItemScriptContainer itemScriptContainer) {

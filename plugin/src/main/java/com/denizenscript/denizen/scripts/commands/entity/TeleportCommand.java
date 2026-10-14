@@ -225,10 +225,10 @@ public class TeleportCommand extends AbstractCommand implements Holdable {
                         if (asyncCounter[0] <= 0) {
                             scriptEntry.setFinished(true);
                         }
-                    });
+                    }, scriptEntry);
                 }
                 else {
-                    PaperAPITools.instance.teleportAsync(entity.getBukkitEntity(), location, cause, entityOptions, relativeAxes);
+                    PaperAPITools.instance.teleportAsync(entity.getBukkitEntity(), location, cause, entityOptions, relativeAxes, null, scriptEntry);
                 }
                 continue;
             }

@@ -15,6 +15,8 @@ import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ListTag;
 import com.denizenscript.denizencore.tags.TagContext;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
+import com.denizenscript.denizen.objects.EntityTag;
+import com.denizenscript.denizencore.scripts.ScriptEntry;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
@@ -187,6 +189,11 @@ public class PaperAPIToolsImpl extends PaperAPITools {
 
     @Override
     public void teleportAsync(Entity entity, Location loc, PlayerTeleportEvent.TeleportCause cause, List<TeleportCommand.EntityState> entityTeleportFlags, List<TeleportCommand.Relative> relativeTeleportFlags, Consumer<Boolean> callback) {
+        teleportAsync(entity, loc, cause, entityTeleportFlags, relativeTeleportFlags, callback, null);
+    }
+
+    @Override
+    public void teleportAsync(Entity entity, Location loc, PlayerTeleportEvent.TeleportCause cause, List<TeleportCommand.EntityState> entityTeleportFlags, List<TeleportCommand.Relative> relativeTeleportFlags, Consumer<Boolean> callback, ScriptEntry scriptEntry) {
         List<TeleportFlag> teleportFlags = new ArrayList<>();
         if (entityTeleportFlags != null) {
             for (TeleportCommand.EntityState entityTeleportFlag : entityTeleportFlags) {
@@ -201,7 +208,13 @@ public class PaperAPIToolsImpl extends PaperAPITools {
         entity.teleportAsync(loc, cause, teleportFlags.toArray(new TeleportFlag[0])).thenAccept(success -> {
             DenizenCore.runOnMainThread(() -> {
                 if (!success && entity.isValid()) {
-                    Debug.echoError("Async teleport failed for entity 'e@" + entity.getUniqueId() + "' to location <LG>" + loc + "<W>, even though the entity is still valid - likely blocked by another plugin cancelling the teleport, or an invalid/unreachable destination.");
+                    String message = "Async teleport of '" + new EntityTag(entity).getDenizenObject().identify() + "' to " + loc + " was refused - likely cancelled by another plugin, or the destination is unreachable.";
+                    if (scriptEntry != null) {
+                        Debug.echoError(scriptEntry, message);
+                    }
+                    else {
+                        Debug.echoError(message);
+                    }
                 }
                 if (callback != null) {
                     callback.accept(success);

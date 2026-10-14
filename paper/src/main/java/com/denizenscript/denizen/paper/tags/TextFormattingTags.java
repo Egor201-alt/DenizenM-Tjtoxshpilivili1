@@ -10,9 +10,11 @@ import com.denizenscript.denizencore.objects.core.ColorTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ListTag;
 import com.denizenscript.denizencore.objects.core.MapTag;
+import com.denizenscript.denizencore.tags.Attribute;
 import com.denizenscript.denizencore.tags.TagManager;
 import com.denizenscript.denizencore.tags.core.EscapeTagUtil;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.object.SpriteObjectContents;
@@ -335,7 +337,7 @@ public class TextFormattingTags {
         // - A player's UUID, or a PlayerTag directly (the "p@" prefix is accepted and stripped).
         // - A texture path, eg "entity/player/wide/steve" - recognized by containing a "/".
         // - A skin blob as "<value>;<signature>", or just the base64 value on its own.
-        // Defaults to "entity/player/wide/steve" when given no input, or input it can't make sense of.
+        // Defaults to "entity/player/wide/steve" when given no input, or input it can't make sense of - a name must be at most 16 characters, and a skin blob must be valid base64 skin data.
         // Prefix the input with "!" to drop the outer (hat) layer.
         // Note that this is a magic Denizen tool - refer to <@link language Denizen Text Formatting>.
         // @example
@@ -350,7 +352,7 @@ public class TextFormattingTags {
         // - narrate "<&head[<[skin_value]>;<[skin_signature]>]>a head from a stored skin"
         // -->
         TagManager.registerStaticTagBaseHandler(ElementTag.class, "&head", (attribute) -> {
-            String input = attribute.hasParam() ? attribute.getParam() : "entity/player/wide/steve";
+            String input = attribute.hasParam() ? attribute.getParam() : DEFAULT_HEAD;
             boolean outerLayer = !input.startsWith("!");
             if (!outerLayer) {
                 input = input.substring(1);
@@ -361,7 +363,7 @@ public class TextFormattingTags {
             }
 
             if (input.isEmpty()) {
-                input = "entity/player/wide/steve";
+                input = DEFAULT_HEAD;
             }
 
             String type;
@@ -372,25 +374,35 @@ public class TextFormattingTags {
             catch (IllegalArgumentException ex) {
                 if (input.indexOf(';') >= 0) {
                     String[] blob = input.split(";", 2);
-                    boolean valid = blob.length == 2 && !blob[0].isEmpty() && !blob[0].equalsIgnoreCase("null") && !blob[1].equalsIgnoreCase("null");
+                    boolean valid = blob.length == 2 && baseEncoder(blob[0]) && !blob[1].isEmpty() && !blob[1].equalsIgnoreCase("null") && blob[1].length() <= MAX_HEAD_PART;
                     if (valid) {
                         type = "skin_blob";
-                        input = blob[0] + '\u0001' + blob[1];
+                        input = blob[0] + '' + blob[1];
                     }
                     else {
-                        input = "entity/player/wide/steve";
+                        input = rejectHeadInput(attribute, input);
                         type = "texture";
                     }
                 }
-                else if (baseEncoder(input)) {
+                else if (baseEncoder(input) && input.length() <= MAX_HEAD_PART) {
                     type = "skin_blob";
-                    input = input + '\u0001';
+                    input = input + '';
                 }
                 else if (input.indexOf('/') >= 0) {
-                    type = "texture";
+                    if (parseableAsTexture(input)) {
+                        type = "texture";
+                    }
+                    else {
+                        input = rejectHeadInput(attribute, input);
+                        type = "texture";
+                    }
+                }
+                else if (looksLikePlayerName(input)) {
+                    type = "name";
                 }
                 else {
-                    type = "name";
+                    input = rejectHeadInput(attribute, input);
+                    type = "texture";
                 }
             }
 
@@ -549,6 +561,43 @@ public class TextFormattingTags {
         TagManager.registerStaticTagBaseHandler(ElementTag.class, "&optimize", (attribute) -> {
             return new ElementTag(FormattedTextHelper.LEGACY_SECTION + "[optimize=true]", true);
         });
+    }
+
+    public static final String DEFAULT_HEAD = "entity/player/wide/steve";
+
+    public static final int MAX_HEAD_PART = 32767;
+
+    private static boolean looksLikePlayerName(String input) {
+        if (input.length() > 16) {
+            return false;
+        }
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (c < ' ' || c == FormattedTextHelper.LEGACY_SECTION || c == '[' || c == ']' || c == '@') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean parseableAsTexture(String input) {
+        if (input.length() > MAX_HEAD_PART) {
+            return false;
+        }
+        try {
+            Key.key(input);
+            return true;
+        }
+        catch (RuntimeException ex) {
+            return false;
+        }
+    }
+
+    private static String rejectHeadInput(Attribute attribute, String input) {
+        String shown = input.length() > 48 ? input.substring(0, 48) + "..." : input;
+        attribute.echoError("Input '" + shown + "' (length " + input.length() + ") isn't a player name, UUID, texture path, or skin blob (for tag &head[...]), so the default head is used instead."
+                + " Note that a head built from oversized input cannot be sent to a client, which would disconnect anyone who saw it.");
+        return DEFAULT_HEAD;
     }
 
     private static boolean baseEncoder(String input) {
