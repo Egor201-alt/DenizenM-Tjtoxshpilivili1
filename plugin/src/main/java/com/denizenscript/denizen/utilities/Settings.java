@@ -86,6 +86,7 @@ public class Settings {
         // Spigot
         PolygonTag.preferInclusive = config.getBoolean("Tags.Polygon default inclusive", false);
         allowAsyncPassThrough = config.getBoolean("Scripts.Economy.Pass async to main thread", false);
+        asyncPlaceholders = config.getBoolean("Scripts.Placeholders.Async parsing", true);
         skipChunkFlagCleaning = config.getBoolean("Saves.Skip chunk flag cleaning", false);
         nullifySkullSkinIds = config.getBoolean("Tags.Nullify skull skin ids", false);
         worldPlayerDataSaveDelay = (float) DurationTag.valueOf(config.getString("Save world player file delay", "10s"), CoreUtilities.basicContext).getSeconds();
@@ -152,6 +153,8 @@ public class Settings {
     public static boolean nullifySkullSkinIds = false;
 
     public static boolean allowAsyncPassThrough = false;
+
+    public static boolean asyncPlaceholders = true;
 
     public static float worldPlayerDataSaveDelay = 10;
 

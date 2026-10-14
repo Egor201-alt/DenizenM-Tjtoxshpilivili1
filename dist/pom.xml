@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <BUILD_NUMBER>7309M</BUILD_NUMBER>
+        <BUILD_NUMBER>7311M</BUILD_NUMBER>
         <BUILD_CLASS>DEV</BUILD_CLASS>
     </properties>
 
@@ -154,10 +154,6 @@
                                 <relocation>
                                     <pattern>org.objectweb</pattern>
                                     <shadedPattern>com.denizenscript.shaded.org.objectweb</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>org.apache</pattern>
-                                    <shadedPattern>com.denizenscript.shaded.org.apache</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>net.kyori.option</pattern>

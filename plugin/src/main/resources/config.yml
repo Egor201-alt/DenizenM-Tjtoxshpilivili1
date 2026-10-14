@@ -96,13 +96,25 @@ Scripts:
         # This defaults to false to avoid any possible interference on servers that don't use command scripts.
         Auto init: false
     Economy:
-        # If enabled, async calls to economy scripts or PlaceholderAPI tags will be sent through to the main thread.
-        # This will remove the illegal-async-access warning, at the cost of risking thread lockup or other issues.
-        # If you're wondering why async is blocked, see explanation @ https://i.alexgoodwin.media/i/misc/2fdd06.png
-        # IF YOU HAVE ASYNC WARNINGS FROM DENIZEN, THIS IS NOT HOW TO FIX IT.
-        # YOU SHOULD YELL AT THE DEVELOPER OF WHATEVER PLUGIN IS TRYING TO MAKE SYNC-ONLY CALLS ASYNC.
-        # ASYNC USAGES OF THE BUKKIT API ARE NEVER ALLOWED EXCEPT WHERE EXPLICITLY DOCUMENTED OTHERWISE.
+        # If enabled, async calls to economy scripts are sent through to the main thread and waited on, instead of being refused.
+        # That costs the calling thread up to a full tick per call, and can lock the server up if the main thread is itself
+        # waiting on that thread - which is why it defaults to false. See the explanation of the underlying problem
+        # @ https://i.alexgoodwin.media/i/misc/2fdd06.png
+        # An economy script is not a tag: it runs script commands, which have to run where the server can see them, so an
+        # async caller has no cheaper path than this one. If a plugin calls economy scripts off-thread, the real fix is on
+        # that plugin's side, not here.
+        # Note that this no longer covers PlaceholderAPI reads: while 'Scripts.Placeholders.Async parsing' below is enabled,
+        # a placeholder is parsed on whatever thread asked for it, and only the tags that read live server data are handed
+        # to the main thread, one at a time. Refer to the 'Async Tag Safety' language doc for which tags those are.
         Pass async to main thread: false
+    Placeholders:
+        # If enabled, PlaceholderAPI reads of Denizen placeholders ('%denizen_<tag>%') are parsed on whatever thread asked for them,
+        # instead of being refused off the main thread. Tags that read live server data are still handed to the main thread one at a
+        # time by the engine itself, so a placeholder of saved data (a flag, a name, recent tps) costs nothing and never waits,
+        # while one that reads the live world costs a single hand-off instead of blocking the whole placeholder.
+        # This takes the '%denizen_...%' placeholders over from Depenizen, which refuses them off-thread; a line in the startup log
+        # says so when it happens. Turn this off to leave Depenizen's own sync-only handling in place.
+        Async parsing: true
 
 # Settings related to queues.
 Queues:

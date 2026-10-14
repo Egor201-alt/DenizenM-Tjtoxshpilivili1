@@ -28,6 +28,7 @@ import com.denizenscript.denizen.utilities.blocks.FullBlockData;
 import com.denizenscript.denizen.utilities.command.*;
 import com.denizenscript.denizen.utilities.command.manager.CommandManager;
 import com.denizenscript.denizen.utilities.command.manager.Injector;
+import com.denizenscript.denizen.utilities.placeholder.AsyncPlaceholders;
 import com.denizenscript.denizen.utilities.command.manager.messaging.Messaging;
 import com.denizenscript.denizen.utilities.debugging.BStatsMetricsLite;
 import com.denizenscript.denizen.utilities.depends.Depends;
@@ -375,6 +376,14 @@ public class Denizen extends JavaPlugin {
                         TagManager.markBareBaseAsyncSafe("npc");
                         TagManager.markObjectTypeMainThreadOnly(NPCTag.class);
                     }
+                }
+            }
+            catch (Throwable ex) {
+                Debug.echoError(ex);
+            }
+            try {
+                if (Settings.asyncPlaceholders && Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+                    AsyncPlaceholders.init();
                 }
             }
             catch (Throwable ex) {
