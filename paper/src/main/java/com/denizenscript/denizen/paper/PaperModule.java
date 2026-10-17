@@ -112,6 +112,7 @@ public class PaperModule {
         PaperEntityExtensions.register();
         PaperItemExtensions.register();
         PaperPlayerExtensions.register();
+        PaperPostEffects.register();
         PaperWorldExtensions.register();
         new TextFormattingTags();
         // Paper Tags
